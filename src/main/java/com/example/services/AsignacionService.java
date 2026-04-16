@@ -9,11 +9,9 @@ import java.util.List;
 
 public class AsignacionService implements IAsignacionService {
 
-    // Dependemos de las interfaces, no de las implementaciones directas
     private final ICursoRepository cursoRepository;
     private final IDocenteRepository docenteRepository;
 
-    // Inyección de dependencias mediante el constructor
     public AsignacionService(ICursoRepository cursoRepository, IDocenteRepository docenteRepository) {
         this.cursoRepository = cursoRepository;
         this.docenteRepository = docenteRepository;
@@ -21,26 +19,36 @@ public class AsignacionService implements IAsignacionService {
 
     @Override
     public void registrarCurso(Curso curso) {
+        // Validación: Evitar códigos duplicados
+        if (cursoRepository.buscarPorCodigo(curso.getCodigo()) != null) {
+            throw new IllegalArgumentException("Error: Ya existe un curso registrado con el código '" + curso.getCodigo() + "'.");
+        }
         cursoRepository.guardar(curso);
     }
 
     @Override
     public void registrarDocente(Docente docente) {
+        // Validación: Evitar CIFs duplicados
+        if (docenteRepository.buscarPorCif(docente.getCif()) != null) {
+            throw new IllegalArgumentException("Error: Ya existe un docente registrado con el CIF '" + docente.getCif() + "'.");
+        }
         docenteRepository.guardar(docente);
     }
 
     @Override
-    public boolean asignarDocenteACurso(String codigoCurso, String cifDocente) {
+    public void asignarDocenteACurso(String codigoCurso, String cifDocente) {
         Curso curso = cursoRepository.buscarPorCodigo(codigoCurso);
-        Docente docente = docenteRepository.buscarPorCif(cifDocente);
-
-        // Validamos que ambos existan antes de asignar
-        if (curso != null && docente != null) {
-            curso.setDocente(docente);
-            return true; // Asignación exitosa
+        if (curso == null) {
+            throw new IllegalArgumentException("Error: El curso con código '" + codigoCurso + "' no existe.");
         }
 
-        return false; // Falló la asignación (código o CIF incorrectos)
+        Docente docente = docenteRepository.buscarPorCif(cifDocente);
+        if (docente == null) {
+            throw new IllegalArgumentException("Error: El docente con CIF '" + cifDocente + "' no existe.");
+        }
+
+        // Si ambas validaciones pasan, asignamos
+        curso.setDocente(docente);
     }
 
     @Override
